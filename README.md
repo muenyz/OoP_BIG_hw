@@ -13,6 +13,10 @@ helloworld.py具体功能为单击坐标参考点后，再连续单击3次可生
     hdc_circle(462 + base_x - defaultBasex, 246 + base_y - defaultBasey, 86, 1, 1, 0x00ddf3ff);
 ```
 最终效果如下：
+
 ![QQ截图20231028175022](https://github.com/user-attachments/assets/4be21249-3223-48eb-811d-d2bb81fe87f9)
+
 原图如下：
+
 ![CD9T08437F@B%G OV9N0T$E](https://github.com/user-attachments/assets/a0a8cc5c-725f-44d3-9013-608633ba5622)
+
