@@ -139,11 +139,7 @@
   <ItemGroup>
     <ClInclude Include="..\include\cmd_console_tools.h" />
     <ClInclude Include="..\include\cmd_hdc_tools.h" />
-    <ClInclude Include="..\include\lib_thdc_tools.h" />
     <ClInclude Include="hdc_student_works.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\lib\lib_thdc_tools.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

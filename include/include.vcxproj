@@ -139,8 +139,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="class_aat.h" />
+    <ClInclude Include="class_crt.h" />
     <ClInclude Include="cmd_console_tools.h" />
     <ClInclude Include="cmd_input.h" />
+    <ClInclude Include="linestring.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="pattern.h" />
   </ItemGroup>

@@ -27,5 +27,14 @@
     <ClCompile Include="cmd_input.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="class_aat.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="linestring.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="class_crt.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

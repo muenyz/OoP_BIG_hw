@@ -143,6 +143,7 @@
     <ClCompile Include="test-cct.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\class_aat.h" />
     <ClInclude Include="..\include\cmd_console_tools.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

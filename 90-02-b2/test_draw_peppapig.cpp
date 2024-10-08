@@ -1,4 +1,4 @@
-/* 学号 姓名 班级 */
+/* 2253731 计科 张皓钦 */
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <Windows.h>

@@ -139,8 +139,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="class_aat.cpp" />
+    <ClCompile Include="class_crt.cpp" />
     <ClCompile Include="cmd_console_tools.cpp" />
     <ClCompile Include="cmd_input.cpp" />
+    <ClCompile Include="linestring.cpp" />
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="pattern.cpp" />
   </ItemGroup>

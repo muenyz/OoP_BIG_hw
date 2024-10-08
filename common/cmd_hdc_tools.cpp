@@ -24,12 +24,23 @@ const int maxHeight = 2003;
 struct point {
 	int x,y;
 };
-	/* 此处允许添加自定义函数，但仅限static，即外部不可见 */
+/* 此处允许添加自定义函数，但仅限static，即外部不可见 */
+//实现按规则将传入的角度转换为系统角度
+static int getAngle(int angle, int angle0 = 0, bool isClockwise = 1) {
+	while (angle < 0)
+		angle += 360;
+	
+	if (isClockwise)
+		return (angle0 + angle) % 360;
+	else
+		return (angle0 - angle+360) % 360;
+}
+
 static double getDistance(double x1, double y1, double x2, double y2) {
 	return sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2));
 }
 
-//将点(x,y)绕点(point_x,point_y)旋转angle角度（逆时针）
+//将点(x,y)绕点(point_x,point_y)旋转angle角度（顺时针）
 static void rotatePoint(int prex, int prey, int& nowx, int& nowy, int point_x, int point_y, double angle) {
 	nowx = point_x + (int)((prex - point_x) * cos(angle) - (prey - point_y) * sin(angle));
 	nowy = point_y + (int)((prex - point_x) * sin(angle) + (prey - point_y) * cos(angle));
@@ -54,11 +65,19 @@ static void fillPolygon(int N,point p[],int RGB_value)
 		double x;
 		double dx;
 		NET* next;
-	}*pNET[maxHeight],*pAET=new NET;
+	}*pNET[maxHeight], * pAET = new(nothrow) NET;
+	if (!pAET)
+		return;
 	//初始化pNET
 	for (int i = 0; i <maxHeight; i++)
 	{
-		pNET[i] = new NET;
+		pNET[i] = new(nothrow) NET;
+		if (!pNET[i]) {
+			delete pAET;
+			for(int j=0;j<i;j++)
+				delete pNET[j];
+			return;
+		}
 		pNET[i]->next = NULL;
 	}
 	pAET->next = NULL;
@@ -66,7 +85,13 @@ static void fillPolygon(int N,point p[],int RGB_value)
 	//建立pNET
 	for (int i = 0;i < N;i++) {
 		if (p[i].y < p[(i - 1 + N) % N].y) {
-			NET* newEdge = new NET;
+			NET* newEdge = new(nothrow) NET;
+			if (!newEdge) {
+				delete pAET;
+				for (int j = 0;j < maxHeight;j++)
+					delete pNET[j];
+				return;
+			}
 			newEdge->ymax = p[(i - 1 + N) % N].y;
 			newEdge->x = p[i].x;
 			newEdge->dx = double(p[(i - 1 + N) % N].x - p[i].x) / (p[(i - 1 + N) % N].y - p[i].y);
@@ -74,7 +99,13 @@ static void fillPolygon(int N,point p[],int RGB_value)
 			pNET[p[i].y-MINY]->next = newEdge;
 		}
 		if(p[i].y < p[(i + 1) % N].y){
-			NET* newEdge = new NET;
+			NET* newEdge = new(nothrow) NET;
+			if (!newEdge) {
+				delete pAET;
+				for (int j = 0;j < maxHeight;j++)
+					delete pNET[j];
+				return;
+			}
 			newEdge->ymax = p[(i + 1) % N].y;
 			newEdge->x = p[i].x;
 			newEdge->dx = double(p[(i + 1) % N].x - p[i].x) / (p[(i + 1) % N].y - p[i].y);
@@ -100,7 +131,23 @@ static void fillPolygon(int N,point p[],int RGB_value)
 			p->next->x += p->next->dx;
 			p = p->next;
 		}
-		//接下来将pNET[i]中的边加入pAET，以x为主序，x相同时以dx为次序递增排序
+		//考虑有沙漏那样的四边形，即两边相交，所以接下来用插入法重排pAET
+		for (p = pAET;p&&p->next;p = p->next) {//pAET~p是已排序
+			NET* q = pAET;
+			while(q!=p){
+				if (q->next->x > p->next->x)
+					break;
+				q = q->next;
+			}
+			if (q != p) {
+				NET* temp = p->next;
+				p->next = p->next->next;
+				temp->next = q->next;
+				q->next = temp;
+			}
+		}
+
+		//接下来将pNET[i]中的边加入pAET，按x递增
 		p = pNET[i];
 		while (p->next) {
 			NET* temp = p->next;
@@ -108,8 +155,6 @@ static void fillPolygon(int N,point p[],int RGB_value)
 			NET* q = pAET;
 			while (q->next) {
 				if (q->next->x > temp->x)
-					break;
-				else if (q->next->x == temp->x&&q->next->dx > temp->dx)
 					break;
 				q = q->next;
 			}
@@ -351,50 +396,10 @@ void hdc_point(const int x, const int y, const int thickness, const int RGB_valu
 ***************************************************************************/
 void hdc_line(const int x1, const int y1, const int x2, const int y2, const int thickness, const int RGB_value)
 {
-	//hdc_point(x1, y1, thickness, RGB_value);
-	//hdc_point(x2, y2, thickness, RGB_value);
 	if (RGB_value != INVALID_RGB)
 		hdc_set_pencolor(RGB_value);
-	int dx, dy, oldx = INT_MAX, oldy = INT_MAX;
-	if(0){
-		int tn = thickness + !thickness;
-		double angle = atan2(y2 - y1, x2 - x1)+PI/2;
-		for (int r = 0; r < tn; r++) {
-			dx = (int)round((r-thickness/2)*cos(angle));
-			dy = (int)round((r - thickness / 2) * sin(angle));
-			if (dx != oldx || dy != oldy) {
-				hdc_base_line(x1 + dx, y1 + dy, x2 + dx, y2 + dy);
-				//hdc_base_line(x1 - dx, y1 - dy, x2 - dx, y2 - dy);
-				//hdc_base_line(x1 + dx + 1, y1 + dy + 1, x2 + dx - 1, y2 + dy - 1);
-				//hdc_base_line(x1 - dx + 1, y1 - dy + 1, x2 - dx - 1, y2 - dy - 1);
-				oldx = dx;
-				oldy = dy;
-			}
-		}
-	}
-	else if(0){
-		int R = thickness / 2;
-		for (int angle = 0; angle <= 360; angle++) {
-			dx = int(R * cos(angle));
-			dy = int(R * sin(angle));
-			if (dx != oldx || dy != oldy) {
-				hdc_base_line(x1 + dx, y1 + dy, x2 + dx, y2 + dy);
-				hdc_base_line(x1 - dx, y1 - dy, x2 - dx, y2 - dy);
-				oldx = dx;
-				oldy = dy;
-			}
-		}
-	}
-	else if(0){
-		double angle = atan2(y2 - y1, x2 - x1);
-		int length = (int)getDistance(x1, y1, x2, y2);
-		for (int ds = 0; ds < length; ds++) {
-			dx = int(ds * cos(angle));
-			dy = int(ds * sin(angle));
-			if (dx != oldx || dy != oldy)
-				hdc_point(x1 + dx, y1 + dy, thickness, RGB_value);
-		}
-	}
+	if (thickness <= 1)
+		hdc_base_line(x1, y1, x2, y2);
 	else {
 		double tn = (double)(thickness + !thickness) / 2;
 		double dis = getDistance(x1, y1, x2, y2);
@@ -408,17 +413,18 @@ void hdc_line(const int x1, const int y1, const int x2, const int y2, const int 
 		}
 		prex = x1;
 		prey = y1;
-		for (int s = 0;s <= dis;s++) {
-			nowx=x1+s * cos(angle);
-			nowy=y1+s * sin(angle);
-			for (int x = int(nowx - tn);x <= int(nowx+tn);x++) {
-				for (int y = (int)(nowy - tn);y <= (int)(nowy+tn);y++) {
-					if(getDistance(x,y,nowx,nowy)<=tn&&getDistance(x,y,prex,prey)>tn)
+		for (int s = 0; s <= dis; s++) {
+			nowx = x1 + s * cos(angle);
+			nowy = y1 + s * sin(angle);
+			for (int x = int(nowx - tn); x <= int(nowx + tn); x++) {
+				for (int y = (int)(nowy - tn); y <= (int)(nowy + tn); y++) {
+					if (getDistance(x, y, nowx, nowy) <= tn && getDistance(x, y, prex, prey) > tn)
 						hdc_base_point(x, y);
 				}
 			}
 			prex = nowx;
 			prey = nowy;
+
 		}
 	}
 }
@@ -440,9 +446,16 @@ void hdc_line(const int x1, const int y1, const int x2, const int y2, const int 
 ***************************************************************************/
 void hdc_triangle(const int x1, const int y1, const int x2, const int y2, const int x3, const int y3, bool filled, const int thickness, const int RGB_value)
 {
-	hdc_line(x1, y1, x2, y2, thickness, RGB_value);
-	hdc_line(x1, y1, x3, y3, thickness, RGB_value);
-	hdc_line(x3, y3, x2, y2, thickness, RGB_value);
+	if (thickness > 1) {
+		hdc_line(x1, y1, x2, y2, thickness, RGB_value);
+		hdc_line(x1, y1, x3, y3, thickness, RGB_value);
+		hdc_line(x3, y3, x2, y2, thickness, RGB_value);
+	}
+	else {
+		hdc_base_line(x1, y1, x2, y2);
+		hdc_base_line(x1, y1, x3, y3);
+		hdc_base_line(x3, y3, x2, y2);
+	}
 	if (filled) {
 		point p[3];
 		p[0].x = x1;
@@ -475,8 +488,8 @@ void hdc_rectangle(const int left_up_x, const int left_up_y, const int width, co
 	loc[0][0] = left_up_x;
 	loc[0][1] = left_up_y;
 	for (int i = 1, len = width; i < 4; i++, len = width + high - len) {
-		loc[i][0] = int(loc[i - 1][0] + len * cos(PI * (rotation_angles + 90 * (i - 1)) / 180));
-		loc[i][1] = int(loc[i - 1][1] + len * sin(PI * (rotation_angles + 90 * (i - 1)) / 180));
+		loc[i][0] = int(loc[i - 1][0] - len * sin(PI * getAngle(rotation_angles + 90 * (i - 1),270) / 180));
+		loc[i][1] = int(loc[i - 1][1] + len * cos(PI * getAngle(rotation_angles + 90 * (i - 1),270) / 180));
 	}
 	for (int i = 0; i < 4; i++)
 		hdc_line(loc[i][0], loc[i][1], loc[(i + 1) % 4][0], loc[(i + 1) % 4][1], thickness, RGB_value);
@@ -526,13 +539,18 @@ void hdc_arc(const int point_x, const int point_y, const int radius, const int a
 	int x1, y1, x2, y2;
 	if (RGB_value != INVALID_RGB)
 		hdc_set_pencolor(RGB_value);
-	for (int angle = angle_begin; angle-angle_end&&angle-angle_end-360; angle++) {
-		x1 = point_x + (int)(radius * sin(angle * PI / 180));
-		y1 = point_y - (int)(radius * cos(angle * PI / 180));
-		x2 = point_x + (int)(radius * sin((angle + 1) * PI / 180));
-		y2 = point_y - (int)(radius * cos((angle + 1) * PI / 180));
+	x1 = point_x - (int)(radius * sin(getAngle(angle_begin, 180) * PI / 180));
+	y1 = point_y + (int)(radius * cos(getAngle(angle_begin, 180) * PI / 180));
+	for (int angle = angle_begin+1; (angle-angle_end)%360; angle++) {
+		x2 = point_x - (int)(radius * sin(getAngle(angle,180) * PI / 180));
+		y2 = point_y + (int)(radius * cos(getAngle(angle, 180) * PI / 180));
 		hdc_line(x1, y1, x2, y2, thickness, RGB_value);
+		x1 = x2;
+		y1 = y2;
 	}
+	x2 = point_x - (int)(radius * sin(getAngle(angle_end, 180) * PI / 180));
+	y2 = point_y + (int)(radius * cos(getAngle(angle_end, 180) * PI / 180));
+	hdc_line(x1, y1, x2, y2, thickness, RGB_value);
 }
 /***************************************************************************
   函数名称：
@@ -556,24 +574,27 @@ void hdc_sector(const int point_x, const int point_y, const int radius, const in
 		hdc_set_pencolor(RGB_value);
 	hdc_arc(point_x, point_y, radius, angle_begin, angle_end, thickness, RGB_value);
 	if ((angle_end - angle_begin) % 360) {
-		x1 = point_x + (int)(radius * sin(angle_begin * PI / 180));
-		y1 = point_y - (int)(radius * cos(angle_begin * PI / 180));
-		x2 = point_x + (int)(radius * sin(angle_end * PI / 180));
-		y2 = point_y - (int)(radius * cos(angle_end * PI / 180));
+		x1 = point_x - (int)(radius * sin(getAngle(angle_begin, 180) * PI / 180));
+		y1 = point_y + (int)(radius * cos(getAngle(angle_begin, 180) * PI / 180));
+		x2 = point_x - (int)(radius * sin(getAngle(angle_end, 180) * PI / 180));
+		y2 = point_y + (int)(radius * cos(getAngle(angle_end, 180) * PI / 180));
 		hdc_line(point_x, point_y, x1, y1, thickness, RGB_value);
 		hdc_line(point_x, point_y, x2, y2, thickness, RGB_value);
 	}
 	//因为角度用int最多360，所以可以把扇形当成最多361边形来填充
 	if (filled) {
 		point p[370];
-		int cnt=0;
-		for (int angle = angle_begin; angle-angle_end&&angle-angle_end-360; angle++,cnt++) {
-			p[cnt].x = point_x + (int)(radius * sin(angle * PI / 180));
-			p[cnt].y = point_y - (int)(radius * cos(angle * PI / 180));
+		int cnt = 0;
+		p[cnt].x = point_x - (int)(radius * sin(getAngle(angle_begin, 180) * PI / 180));
+		p[cnt].y = point_y + (int)(radius * cos(getAngle(angle_begin, 180) * PI / 180));
+		cnt++;
+		for (int angle = angle_begin+1; (angle-angle_end)%360; angle++,cnt++) {
+			p[cnt].x = point_x - (int)(radius * sin(getAngle(angle, 180) * PI / 180));
+			p[cnt].y = point_y + (int)(radius * cos(getAngle(angle, 180) * PI / 180));
 		}
 		if ((angle_begin - angle_end) % 360 != 0) {
-			p[cnt].x = point_x + (int)(radius * sin(angle_end * PI / 180));
-			p[cnt].y = point_y - (int)(radius * cos(angle_end * PI / 180));
+			p[cnt].x = point_x - (int)(radius * sin(getAngle(angle_end, 180) * PI / 180));
+			p[cnt].y = point_y + (int)(radius * cos(getAngle(angle_end, 180) * PI / 180));
 			cnt++;
 			p[cnt].x = point_x;
 			p[cnt].y = point_y;
@@ -620,11 +641,11 @@ void hdc_ellipse(const int point_x, const int point_y, const int radius_a, const
 		hdc_set_pencolor(RGB_value);
 	int x1, y1, x2, y2,cnt=0;
 	point p[365] = { 0 };
-	rotatePoint(point_x + radius_a, point_y, x1, y1, point_x, point_y, -rotation_angles*PI/180);
+	rotatePoint(point_x + radius_a, point_y, x1, y1, point_x, point_y, rotation_angles*PI/180);
 	for (int angle = 0; angle <= 360; angle++) {
-		x2 = point_x + (int)(radius_a * cos((angle + 1) * PI / 180));
-		y2 = point_y - (int)(radius_b * sin((angle + 1) * PI / 180));
-		rotatePoint(x2, y2, x2, y2, point_x, point_y, -rotation_angles * PI / 180);
+		x2 = point_x - (int)(radius_a * sin(getAngle(angle + 1,270) * PI / 180));
+		y2 = point_y + (int)(radius_b * cos(getAngle(angle + 1, 270) * PI / 180));
+		rotatePoint(x2, y2, x2, y2, point_x, point_y, rotation_angles * PI / 180);
 		if(x1!=x2||y1!=y2){
 			hdc_line(x1, y1, x2, y2, thickness, RGB_value);
 			p[cnt].x = x1;

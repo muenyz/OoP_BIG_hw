@@ -50,13 +50,5 @@
     <ClInclude Include="..\include\cmd_hdc_tools.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\lib_thdc_tools.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="..\lib\lib_thdc_tools.lib">
-      <Filter>资源文件</Filter>
-    </Library>
   </ItemGroup>
 </Project>

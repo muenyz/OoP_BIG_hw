@@ -27,5 +27,14 @@
     <ClInclude Include="cmd_input.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="class_aat.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="linestring.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="class_crt.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

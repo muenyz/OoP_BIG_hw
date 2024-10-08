@@ -1,4 +1,4 @@
-/* 学号 姓名 班级 */
+/* 2253731 计科 张皓钦 */
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include <iomanip>
@@ -303,7 +303,6 @@ int main(int argc, char** argv)
 
 	//画三角形函数测试
 	if (test_choise[T_TRIANGLE] == '1') {
-		hdc_cls();
 		//hdc_triangle(123, 456, 789, 654, 321, 100, 1, 2 + rand() % 5);
 		//随机显示20个三角形
 		for (i = 0; i < 20; i++) {
@@ -627,7 +626,8 @@ int main(int argc, char** argv)
 		   注：为了统一，hdc_draw_cartoon_学号 的参照点坐标传入参数定死为（400,400），保证在(400,400)是显示正确，
 			  但在函数内部不要定死（400，400）
 		*/
-
+		hdc_draw_cartoon_2253731(400,400);
+		to_be_continued("卡通图像-", "张皓钦", "-完成", STL_X, STL_Y);
 	}
 
 	hdc_release();
